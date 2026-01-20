@@ -18,7 +18,7 @@ def load_data():
 
 def save_data(data):
     with open(DATA_FILE, "w") as f:
-        json.dump(data, f, indent=4)
+        json.dump(data, indent=4)
 
 # ---------- APP ----------
 class EduTantraCRM:
@@ -31,9 +31,7 @@ class EduTantraCRM:
         try:
             self.root.attributes("-zoomed", True)
         except:
-            self.root.geometry(
-                f"{self.root.winfo_screenwidth()}x{self.root.winfo_screenheight()}+0+0"
-            )
+            self.root.geometry(f"{self.root.winfo_screenwidth()}x{self.root.winfo_screenheight()}+0+0")
 
         self.data = load_data()
         self.show_login()
@@ -74,6 +72,7 @@ class EduTantraCRM:
     def login(self):
         if self.u.get() == "admin" and self.p.get() == "edu123":
             self.show_dashboard()
+            self.followup_alert()
         else:
             messagebox.showerror("Error", "Invalid credentials")
 
@@ -187,12 +186,28 @@ class EduTantraCRM:
         for c in ("name", "mobile", "status"):
             tree.heading(c, text=c.title())
 
+        # Color coding rows based on status
+        def style_rows():
+            for i in tree.get_children():
+                status = tree.item(i)["values"][2]
+                if status == "Converted":
+                    tree.item(i, tags=("green",))
+                elif status == "Follow-up":
+                    tree.item(i, tags=("yellow",))
+                else:
+                    tree.item(i, tags=("red",))
+
+            tree.tag_configure("green", background="#d4edda")
+            tree.tag_configure("yellow", background="#fff3cd")
+            tree.tag_configure("red", background="#f8d7da")
+
         def load(text=""):
             tree.delete(*tree.get_children())
             for l in self.data:
                 if text.lower() in l["name"].lower() or text in l["mobile"]:
                     tree.insert("", "end",
                                 values=(l["name"], l["mobile"], l["status"]))
+            style_rows()
 
         load()
         search.bind("<KeyRelease>", lambda e: load(search.get()))
@@ -226,8 +241,19 @@ class EduTantraCRM:
             box.pack(fill="x", padx=20, pady=6)
             tk.Label(box, text=f"Pitch Notes:\n{l.get('pitch','')}",
                      bg="white", wraplength=900, justify="left").pack(padx=10, pady=5)
+
+            # Edit button
             ttk.Button(box, text="Edit Pitch",
                        command=lambda lead=l: self.add_lead(existing_lead=lead)).pack(pady=5)
+            # Copy button
+            ttk.Button(box, text="Copy Pitch",
+                       command=lambda text=l.get('pitch',''): self.copy_to_clipboard(text)).pack(pady=3)
+
+    # ---------- COPY TO CLIPBOARD ----------
+    def copy_to_clipboard(self, text):
+        self.root.clipboard_clear()
+        self.root.clipboard_append(text)
+        messagebox.showinfo("Copied", "Pitch copied to clipboard!")
 
     # ---------- STATS ----------
     def show_stats(self):
@@ -250,11 +276,18 @@ class EduTantraCRM:
         canvas.draw()
         canvas.get_tk_widget().pack(expand=True, pady=40)
 
+    # ---------- FOLLOW-UP ALERT ----------
+    def followup_alert(self):
+        today = str(date.today())
+        today_followups = [l for l in self.data if l["followup"] == today]
+        if today_followups:
+            msg = "Leads to follow-up today:\n" + "\n".join(l["name"] for l in today_followups)
+            messagebox.showinfo("Follow-up Reminder", msg)
+
     # ---------- UTILITY ----------
     def clear(self):
         for w in self.root.winfo_children():
             w.destroy()
-
 
 # ---------- RUN ----------
 root = tk.Tk()
