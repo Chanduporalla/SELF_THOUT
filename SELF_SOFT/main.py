@@ -9,16 +9,32 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 APP_TITLE = "Edu Tantra Mini CRM"
 DATA_FILE = "leads.json"
 
-# ---------- DATA ----------
+# ---------- DATA (SAFE) ----------
 def load_data():
     if not os.path.exists(DATA_FILE):
         return []
-    with open(DATA_FILE, "r") as f:
-        return json.load(f)
+
+    try:
+        with open(DATA_FILE, "r") as f:
+            content = f.read().strip()
+            if not content:
+                return []
+            return json.loads(content)
+    except json.JSONDecodeError:
+        print("⚠️ leads.json corrupted. Resetting.")
+        return []
+    except Exception as e:
+        print("⚠️ Data load error:", e)
+        return []
+
 
 def save_data(data):
-    with open(DATA_FILE, "w") as f:
-        json.dump(data, indent=4)
+    try:
+        with open(DATA_FILE, "w") as f:
+            json.dump(data, f, indent=4)
+    except Exception as e:
+        messagebox.showerror("Save Error", str(e))
+
 
 # ---------- APP ----------
 class EduTantraCRM:
@@ -31,7 +47,9 @@ class EduTantraCRM:
         try:
             self.root.attributes("-zoomed", True)
         except:
-            self.root.geometry(f"{self.root.winfo_screenwidth()}x{self.root.winfo_screenheight()}+0+0")
+            self.root.geometry(
+                f"{self.root.winfo_screenwidth()}x{self.root.winfo_screenheight()}+0+0"
+            )
 
         self.data = load_data()
         self.show_login()
@@ -86,9 +104,7 @@ class EduTantraCRM:
     def build_topbar(self):
         top = tk.Frame(self.root, bg="white")
         top.pack(fill="x")
-        top.grid_columnconfigure(0, weight=1)
-        top.grid_columnconfigure(1, weight=2)
-        top.grid_columnconfigure(2, weight=1)
+        top.grid_columnconfigure(1, weight=1)
 
         tk.Label(top, text="Edu Tantra CRM",
                  font=("Segoe UI", 13, "bold"),
@@ -97,7 +113,7 @@ class EduTantraCRM:
         if os.path.exists("logo.png"):
             img = Image.open("logo.png").resize((220, 80))
             self.logo = ImageTk.PhotoImage(img)
-            tk.Label(top, image=self.logo, bg="white").grid(row=0, column=1, pady=5)
+            tk.Label(top, image=self.logo, bg="white").grid(row=0, column=1)
         else:
             tk.Label(top, text="EDU TANTRA",
                      font=("Segoe UI", 18, "bold"),
@@ -107,7 +123,7 @@ class EduTantraCRM:
         menu.grid(row=0, column=2, sticky="e", padx=20)
 
         for txt, cmd in [
-            ("Add Lead", lambda: self.add_lead()),
+            ("Add Lead", self.add_lead),
             ("Leads", self.show_leads),
             ("Pitch", self.show_pitch),
             ("Stats", self.show_stats),
@@ -123,7 +139,7 @@ class EduTantraCRM:
     def add_lead(self, existing_lead=None):
         win = tk.Toplevel(self.root)
         win.title("Add Lead")
-        win.geometry("420x500")
+        win.geometry("420x520")
 
         fields = ["Name", "Mobile", "College", "Email", "Follow-up (YYYY-MM-DD)"]
         entries = {}
@@ -143,13 +159,16 @@ class EduTantraCRM:
         pitch.pack(fill="x", padx=20)
 
         if existing_lead:
-            for f in fields:
-                entries[f].insert(0, existing_lead[f.lower()])
+            entries["Name"].insert(0, existing_lead["name"])
+            entries["Mobile"].insert(0, existing_lead["mobile"])
+            entries["College"].insert(0, existing_lead["college"])
+            entries["Email"].insert(0, existing_lead["email"])
+            entries["Follow-up (YYYY-MM-DD)"].insert(0, existing_lead["followup"])
             status.set(existing_lead["status"])
             pitch.insert("1.0", existing_lead.get("pitch", ""))
 
         def save():
-            lead_data = {
+            lead = {
                 "name": entries["Name"].get(),
                 "mobile": entries["Mobile"].get(),
                 "college": entries["College"].get(),
@@ -161,10 +180,9 @@ class EduTantraCRM:
             }
 
             if existing_lead:
-                idx = self.data.index(existing_lead)
-                self.data[idx] = lead_data
+                self.data[self.data.index(existing_lead)] = lead
             else:
-                self.data.append(lead_data)
+                self.data.append(lead)
 
             save_data(self.data)
             win.destroy()
@@ -172,7 +190,7 @@ class EduTantraCRM:
 
         ttk.Button(win, text="Save Lead", command=save).pack(pady=15)
 
-    # ---------- LEADS LIST ----------
+    # ---------- LEADS ----------
     def show_leads(self):
         for w in self.main.winfo_children():
             w.destroy()
@@ -186,33 +204,17 @@ class EduTantraCRM:
         for c in ("name", "mobile", "status"):
             tree.heading(c, text=c.title())
 
-        # Color coding rows based on status
-        def style_rows():
-            for i in tree.get_children():
-                status = tree.item(i)["values"][2]
-                if status == "Converted":
-                    tree.item(i, tags=("green",))
-                elif status == "Follow-up":
-                    tree.item(i, tags=("yellow",))
-                else:
-                    tree.item(i, tags=("red",))
-
-            tree.tag_configure("green", background="#d4edda")
-            tree.tag_configure("yellow", background="#fff3cd")
-            tree.tag_configure("red", background="#f8d7da")
-
         def load(text=""):
             tree.delete(*tree.get_children())
             for l in self.data:
                 if text.lower() in l["name"].lower() or text in l["mobile"]:
                     tree.insert("", "end",
                                 values=(l["name"], l["mobile"], l["status"]))
-            style_rows()
 
         load()
         search.bind("<KeyRelease>", lambda e: load(search.get()))
 
-    # ---------- PITCH VIEW ----------
+    # ---------- PITCH ----------
     def show_pitch(self):
         for w in self.main.winfo_children():
             w.destroy()
@@ -221,39 +223,16 @@ class EduTantraCRM:
                  font=("Segoe UI", 16, "bold"),
                  bg="#f4f6f9").pack(pady=15)
 
-        canvas = tk.Canvas(self.main, bg="#f4f6f9")
-        scrollbar = ttk.Scrollbar(self.main, orient="vertical", command=canvas.yview)
-        scroll_frame = tk.Frame(canvas, bg="#f4f6f9")
-
-        scroll_frame.bind(
-            "<Configure>",
-            lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
-        )
-
-        canvas.create_window((0, 0), window=scroll_frame, anchor="nw")
-        canvas.configure(yscrollcommand=scrollbar.set)
-
-        canvas.pack(side="left", fill="both", expand=True)
-        scrollbar.pack(side="right", fill="y")
-
         for l in self.data:
-            box = tk.LabelFrame(scroll_frame, text=l["name"], bg="white")
+            box = tk.LabelFrame(self.main, text=l["name"], bg="white")
             box.pack(fill="x", padx=20, pady=6)
-            tk.Label(box, text=f"Pitch Notes:\n{l.get('pitch','')}",
-                     bg="white", wraplength=900, justify="left").pack(padx=10, pady=5)
 
-            # Edit button
-            ttk.Button(box, text="Edit Pitch",
+            tk.Label(box, text=l.get("pitch", ""),
+                     bg="white", wraplength=900,
+                     justify="left").pack(padx=10, pady=5)
+
+            ttk.Button(box, text="Edit",
                        command=lambda lead=l: self.add_lead(existing_lead=lead)).pack(pady=5)
-            # Copy button
-            ttk.Button(box, text="Copy Pitch",
-                       command=lambda text=l.get('pitch',''): self.copy_to_clipboard(text)).pack(pady=3)
-
-    # ---------- COPY TO CLIPBOARD ----------
-    def copy_to_clipboard(self, text):
-        self.root.clipboard_clear()
-        self.root.clipboard_append(text)
-        messagebox.showinfo("Copied", "Pitch copied to clipboard!")
 
     # ---------- STATS ----------
     def show_stats(self):
@@ -261,33 +240,40 @@ class EduTantraCRM:
             w.destroy()
 
         today = date.today()
+
+        def safe_date(d):
+            try:
+                return datetime.strptime(d, "%Y-%m-%d").date()
+            except:
+                return None
+
         daily = sum(1 for l in self.data if l["date"] == str(today))
         weekly = sum(1 for l in self.data
-                     if (today - datetime.strptime(l["date"], "%Y-%m-%d").date()).days <= 7)
+                     if safe_date(l["date"]) and (today - safe_date(l["date"])).days <= 7)
         monthly = sum(1 for l in self.data
-                      if datetime.strptime(l["date"], "%Y-%m-%d").month == today.month)
+                      if safe_date(l["date"]) and safe_date(l["date"]).month == today.month)
 
         fig, ax = plt.subplots(figsize=(6, 4))
-        ax.bar(["Today", "This Week", "This Month"], [daily, weekly, monthly], color="#4CAF50")
+        ax.bar(["Today", "Week", "Month"], [daily, weekly, monthly])
         ax.set_title("Lead Performance")
-        ax.set_ylabel("Number of Leads")
 
         canvas = FigureCanvasTkAgg(fig, master=self.main)
         canvas.draw()
         canvas.get_tk_widget().pack(expand=True, pady=40)
 
-    # ---------- FOLLOW-UP ALERT ----------
+    # ---------- FOLLOW-UP ----------
     def followup_alert(self):
         today = str(date.today())
-        today_followups = [l for l in self.data if l["followup"] == today]
-        if today_followups:
-            msg = "Leads to follow-up today:\n" + "\n".join(l["name"] for l in today_followups)
-            messagebox.showinfo("Follow-up Reminder", msg)
+        leads = [l["name"] for l in self.data if l["followup"] == today]
+        if leads:
+            messagebox.showinfo("Follow-up Reminder",
+                                "Follow-up today:\n" + "\n".join(leads))
 
-    # ---------- UTILITY ----------
+    # ---------- UTIL ----------
     def clear(self):
         for w in self.root.winfo_children():
             w.destroy()
+
 
 # ---------- RUN ----------
 root = tk.Tk()
