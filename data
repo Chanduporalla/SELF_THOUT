@@ -23,7 +23,57 @@ Anyways, here is the list of courses I've discovered and thought I should share 
 More info on these courses and enrollment details can be found in the Source.
 
 Edit: I removed the Cybrary one because they've started charging money for the CCNA course.
+If you're balancing the worlds of network engineering and cybersecurity, you need a mix of technical documentation, hands-on practice, and real-time threat intelligence.
 
+Here is a curated list of "must-know" websites and resources for your career:
+
+---
+
+## 🛠️ Hands-on Labs & Skill Building
+
+These are essential for moving from "theory" to "execution."
+
+* **[TryHackMe](https://tryhackme.com/)**: Excellent for beginners and intermediate learners. They have dedicated "Pre-Security" and "Network Security" paths that bridge the gap between CCNA concepts and actual hacking.
+* **[Hack The Box (HTB)](https://www.hackthebox.com/)**: The gold standard for penetration testing labs. Their "Academy" provides deep dives into networking protocols from an offensive perspective.
+* **[Cisco Networking Academy (NetAcad)](https://www.netacad.com/)**: Since you're already familiar with CCNA, this is your home base for official labs (Packet Tracer) and updated curriculum on software-defined networking.
+* **[Roadmap.sh (Cyber Security)](https://roadmap.sh/cyber-security)**: A visual guide that shows exactly what to learn next so you don't get lost in the "rabbit hole" of tools.
+
+---
+
+## 📡 Networking Essentials
+
+Every network engineer should have these bookmarked for quick reference.
+
+* **[Practical Networking (PracNet)](https://www.practicalnetworking.net/)**: Known for some of the best visual explanations of Routing, Switching, and "How Networking Works." Their "Packet Traveling" series is legendary.
+* **[Cloudflare Learning Center](https://www.cloudflare.com/learning/)**: Great for understanding modern web networking—DNS, SSL/TLS, BGP, and how DDoS attacks work.
+* **[Subnet-Calculator.com](https://www.subnet-calculator.com/)**: A simple but vital tool for day-to-day subnetting tasks until it becomes second nature.
+
+---
+
+## 🛡️ Cybersecurity News & Threat Intelligence
+
+Staying updated is half the battle.
+
+* **[The Hacker News](https://thehackernews.com/)**: The most popular source for breaking news on data breaches, vulnerabilities, and malware.
+* **[BleepingComputer](https://www.bleepingcomputer.com/)**: Focuses heavily on ransomware and security patches—crucial if you're managing enterprise infrastructure.
+* **[SANS NewsBites](https://www.sans.org/newsletters/newsbites/)**: A twice-weekly high-level summary of the most important security news, curated by experts.
+* **[CVE Details](https://www.google.com/search?q=https://www.cvedetails.com/)**: The "dictionary" of vulnerabilities. You can search for specific hardware (like Cisco routers) to see their known security flaws.
+
+---
+
+## 🧰 Vital Tools to Master
+
+While not "websites" in the traditional sense, these online documentation hubs are your bibles:
+
+1. **[Wireshark]()**: The world’s foremost network protocol analyzer.
+2. **[Nmap]()**: The "Swiss Army Knife" of network discovery and security auditing.
+3. **[OWASP]()**: If you ever deal with web applications, the OWASP Top 10 is mandatory reading for securing web traffic.
+
+---
+
+### Pro-Tip for your Career Path
+
+Since you're a **Senior Academic Counsellor** and a **Final Year Student**, focus on sites that offer **Project-Based Learning**. Building a home lab using **GNS3** or **Eve-NG** (and documenting it on a blog) will do more for your resume than 100 certificates alone.
 
 
 “Give me execution kit” 🚀
